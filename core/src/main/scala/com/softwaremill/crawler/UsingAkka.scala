@@ -1,6 +1,7 @@
 package com.softwaremill.crawler
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.actor.actorRef2Scala
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}

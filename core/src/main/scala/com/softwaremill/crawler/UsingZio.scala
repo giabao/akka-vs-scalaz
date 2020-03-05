@@ -1,16 +1,17 @@
 package com.softwaremill.crawler
 
-import com.typesafe.scalalogging.StrictLogging
-import zio.{Fiber, Task, IO, Queue, UIO}
+import zio.{Fiber, IO, Queue, Task}
 import com.softwaremill.IOInstances._
 import cats.implicits._
+import org.slf4j.LoggerFactory.getLogger
 
-object UsingZio extends StrictLogging {
+object UsingZio {
+  private val logger = getLogger(getClass)
 
-  def crawl(crawlUrl: Url, http: Http[Task], parseLinks: String => List[Url]): UIO[Map[Host, Int]] = {
+  def crawl(crawlUrl: Url, http: Http[Task], parseLinks: String => List[Url]): Task[Map[Host, Int]] = {
 
-    def crawler(crawlerQueue: Queue[CrawlerMessage], data: CrawlerData): UIO[Map[Host, Int]] = {
-      def handleMessage(msg: CrawlerMessage, data: CrawlerData): UIO[CrawlerData] = msg match {
+    def crawler(crawlerQueue: Queue[CrawlerMessage], data: CrawlerData): Task[Map[Host, Int]] = {
+      def handleMessage(msg: CrawlerMessage, data: CrawlerData): Task[CrawlerData] = msg match {
         case Start(url) =>
           crawlUrl(data, url)
 
@@ -19,12 +20,14 @@ object UsingZio extends StrictLogging {
 
           links.foldM(data2) {
             case (d, link) =>
-              val d2 = d.copy(referenceCount = d.referenceCount.updated(link.host, d.referenceCount.getOrElse(link.host, 0) + 1))
+              val d2 = d.copy(referenceCount = d.referenceCount.updated(
+                link.host,
+                d.referenceCount.getOrElse(link.host, 0) + 1))
               crawlUrl(d2, link)
           }
       }
 
-      def crawlUrl(data: CrawlerData, url: Url): UIO[CrawlerData] = {
+      def crawlUrl(data: CrawlerData, url: Url): Task[CrawlerData] = {
         if (!data.visitedLinks.contains(url)) {
           workerFor(data, url.host).flatMap {
             case (data2, workerQueue) =>
@@ -38,7 +41,7 @@ object UsingZio extends StrictLogging {
         } else IO.succeed(data)
       }
 
-      def workerFor(data: CrawlerData, host: Host): UIO[(CrawlerData, Queue[Url])] = {
+      def workerFor(data: CrawlerData, host: Host): Task[(CrawlerData, Queue[Url])] = {
         data.workers.get(host) match {
           case None =>
             for {
@@ -62,7 +65,7 @@ object UsingZio extends StrictLogging {
       }
     }
 
-    def worker(workerQueue: Queue[Url], crawlerQueue: Queue[CrawlerMessage]): UIO[Fiber[Throwable, Unit]] = {
+    def worker(workerQueue: Queue[Url], crawlerQueue: Queue[CrawlerMessage]): Task[Fiber[Throwable, Unit]] = {
       def handleUrl(url: Url): Task[Unit] = {
         http
           .get(url)

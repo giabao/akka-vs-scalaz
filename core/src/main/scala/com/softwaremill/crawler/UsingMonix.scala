@@ -1,13 +1,13 @@
 package com.softwaremill.crawler
 
-import com.typesafe.scalalogging.StrictLogging
+import cats.implicits._
 import monix.eval.{Fiber, Task}
 import monix.execution.AsyncQueue
-
-import cats.implicits._
 import monix.execution.Scheduler.Implicits.global
+import org.slf4j.LoggerFactory.getLogger
 
-object UsingMonix extends StrictLogging {
+object UsingMonix {
+  private val logger = getLogger(getClass)
 
   def crawl(crawlUrl: Url, http: Http[Task], parseLinks: String => List[Url]): Task[Map[Host, Int]] = {
 
@@ -107,7 +107,7 @@ object UsingMonix extends StrictLogging {
       Task.deferFuture(q.poll())
     }
     def offer(t: T): Task[Unit] = {
-      Task.eval(q.offer(t))
+      Task.fromFuture(q.offer(t))
     }
   }
   object MQueue {
