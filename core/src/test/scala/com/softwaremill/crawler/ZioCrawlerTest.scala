@@ -1,11 +1,13 @@
 package com.softwaremill.crawler
 
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.{FlatSpec, Matchers}
-import scalaz.zio.{IO, RTS}
+import zio.Runtime.{default => runtime}
+import zio.Task
 
-class ZioCrawlerTest extends FlatSpec with Matchers with CrawlerTestData with ScalaFutures with IntegrationPatience with RTS {
+class ZioCrawlerTest extends AnyFlatSpec with Matchers with CrawlerTestData with ScalaFutures with IntegrationPatience {
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(
@@ -18,11 +20,14 @@ class ZioCrawlerTest extends FlatSpec with Matchers with CrawlerTestData with Sc
       import testData._
 
       val t = timed {
-        unsafeRun(UsingZio.crawl(startingUrl, url => IO.syncThrowable(http(url)), parseLinks)) should be(expectedCounts)
+        runtime.unsafeRunTask(UsingZio.crawl(
+          startingUrl,
+          url => Task(http(url)),
+          parseLinks)/*.on(actorSystem.dispatcher)*/) should be(expectedCounts)
       }
 
-      shouldTakeMillisMin.foreach(m => t should be >= (m))
-      shouldTakeMillisMax.foreach(m => t should be <= (m))
+      shouldTakeMillisMin.foreach(m => t should be >= m)
+      shouldTakeMillisMax.foreach(m => t should be <= m)
     }
   }
 }

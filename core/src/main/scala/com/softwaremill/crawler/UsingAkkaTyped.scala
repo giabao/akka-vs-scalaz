@@ -26,7 +26,7 @@ object UsingAkkaTyped {
 
           if (data3.inProgress.isEmpty) {
             reportTo ! data3.referenceCount
-            Behavior.stopped
+            Behaviors.stopped
           } else {
             receive(data3)
           }

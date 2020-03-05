@@ -2,11 +2,12 @@ package com.softwaremill.crawler
 
 import monix.eval.Task
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{FlatSpec, Matchers}
 import monix.execution.Scheduler.Implicits.global
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 
-class MonixCrawlerTest extends FlatSpec with Matchers with CrawlerTestData with ScalaFutures with IntegrationPatience {
+class MonixCrawlerTest extends AnyFlatSpec with Matchers with CrawlerTestData with ScalaFutures with IntegrationPatience {
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(
@@ -21,7 +22,7 @@ class MonixCrawlerTest extends FlatSpec with Matchers with CrawlerTestData with 
       val t = timed {
         UsingMonix
           .crawl(startingUrl, url => Task(http(url)), parseLinks)
-          .runAsync
+          .runToFuture
           .futureValue should be(expectedCounts)
       }
 

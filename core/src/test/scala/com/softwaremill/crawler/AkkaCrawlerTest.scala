@@ -2,15 +2,17 @@ package com.softwaremill.crawler
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class AkkaCrawlerTest
     extends TestKit(ActorSystem("crawler-test"))
-    with FlatSpecLike
+    with AnyFlatSpecLike
     with Matchers
     with BeforeAndAfterAll
     with CrawlerTestData
@@ -25,8 +27,8 @@ class AkkaCrawlerTest
       val t = timed {
         UsingAkka.crawl(startingUrl, url => Future(http(url)), parseLinks).futureValue should be(expectedCounts)
       }
-      shouldTakeMillisMin.foreach(m => t should be >= (m))
-      shouldTakeMillisMax.foreach(m => t should be <= (m))
+      shouldTakeMillisMin.foreach(m => t should be >= m)
+      shouldTakeMillisMax.foreach(m => t should be <= m)
     }
   }
 }

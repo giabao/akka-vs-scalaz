@@ -2,9 +2,10 @@ package com.softwaremill.crawler
 
 import com.typesafe.scalalogging.StrictLogging
 import monix.eval.{Fiber, Task}
-import monix.execution.misc.AsyncQueue
+import monix.execution.AsyncQueue
 
 import cats.implicits._
+import monix.execution.Scheduler.Implicits.global
 
 object UsingMonix extends StrictLogging {
 
@@ -78,7 +79,7 @@ object UsingMonix extends StrictLogging {
       workerQueue.take
         .flatMap(handleUrl)
         .restartUntil(_ => false)
-        .fork
+        .start
     }
 
     val crawlerQueue = MQueue.make[CrawlerMessage]
@@ -110,6 +111,6 @@ object UsingMonix extends StrictLogging {
     }
   }
   object MQueue {
-    def make[T]: MQueue[T] = new MQueue(AsyncQueue.empty)
+    def make[T]: MQueue[T] = new MQueue(AsyncQueue.bounded[T](10))
   }
 }
